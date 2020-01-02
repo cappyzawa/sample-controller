@@ -13,13 +13,20 @@ foo.samplecontroller.k8s.io/example-foo created
 ```
 
 ### Define Go Types
+This file should be written.
+* [pkg/apis/samplecontroller/v1alpha1/types.go](./pkg/apis/samplecontroller/v1alpha1/types.go)
 
-After definition.
-```
-$ go mod vendor
+### Generate code by code-generator
+These files should be written.
+* [pkg/apis/samplecontroller/v1alpha1/doc.go](./pkg/apis/samplecontroller/v1alpha1/doc.go)
+* [pkg/apis/samplecontroller/v1alpha1/register.go](./pkg/apis/samplecontroller/v1alpha1/register.go)
+* [pkg/apis/samplecontroller/register.go](./pkg/apis/samplecontroller/register.go)
+
+```bash
 $ ./hack/update-codegen.sh
 ```
 
-### Generate code by code-generator
+[pkg/apis/samplecontroller/v1alpha1/zz_generated.deepcopy.go](./pkg/apis/samplecontroller/v1alpha1/zz_generated.deepcopy.go) and [pkg/client](./pkg/client) are generated.
+
 ### Implement the controller
 ### Implement main
