@@ -2,8 +2,17 @@
 original repository: https://github.com/kubernetes/sample-controller
 
 ## Step
-1. Implement CRD and CR
-1. Define Go Types
-1. Generate code by code-generator
-1. Implement the controller
-1. Implement main
+### Implement CRD and CR
+CRD: [crd.yaml](./artifacts/examples/crd.yaml)
+CR: [example-foo.yaml](./artifacts/examples/example-foo.yaml)
+
+```bash
+$ kubectl apply -f artifacts/examples
+customresourcedefinition.apiextensions.k8s.io/foos.samplecontroller.k8s.io unchanged
+foo.samplecontroller.k8s.io/example-foo created
+```
+
+### Define Go Types
+### Generate code by code-generator
+### Implement the controller
+### Implement main
