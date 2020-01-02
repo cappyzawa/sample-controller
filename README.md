@@ -13,6 +13,13 @@ foo.samplecontroller.k8s.io/example-foo created
 ```
 
 ### Define Go Types
+
+After definition.
+```
+$ go mod vendor
+$ ./hack/update-codegen.sh
+```
+
 ### Generate code by code-generator
 ### Implement the controller
 ### Implement main
