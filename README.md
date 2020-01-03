@@ -29,4 +29,6 @@ $ ./hack/update-codegen.sh
 [pkg/apis/samplecontroller/v1alpha1/zz_generated.deepcopy.go](./pkg/apis/samplecontroller/v1alpha1/zz_generated.deepcopy.go) and [pkg/client](./pkg/client) are generated.
 
 ### Implement the controller
+[controller.go](./controller.go) should be witten.
+
 ### Implement main

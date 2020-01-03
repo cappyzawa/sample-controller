@@ -32,8 +32,8 @@ type fixture struct {
 	kubeclient *k8sfake.Clientset
 
 	// Objects to put in the store
-	fooLister       []*samplecontroller.Foo
-	deployentLister []*apps.Deployment
+	fooLister        []*samplecontroller.Foo
+	deploymentLister []*apps.Deployment
 
 	// Actions expected to happen on the client
 	kubeactions []core.Action
@@ -85,7 +85,7 @@ func (f *fixture) newController() (*Controller, informers.SharedInformerFactory,
 		i.Samplecontroller().V1alpha1().Foos().Informer().GetIndexer().Add(fl)
 	}
 
-	for _, dl := range f.deployentLister {
+	for _, dl := range f.deploymentLister {
 		k8sI.Apps().V1().Deployments().Informer().GetIndexer().Add(dl)
 	}
 
@@ -94,6 +94,10 @@ func (f *fixture) newController() (*Controller, informers.SharedInformerFactory,
 
 func (f *fixture) run(fooName string) {
 	f.runController(fooName, true, false)
+}
+
+func (f *fixture) runExpectError(fooName string) {
+	f.runController(fooName, true, true)
 }
 
 func (f *fixture) runController(fooName string, startInformers bool, expectError bool) {
@@ -244,6 +248,54 @@ func TestCreatesDeployment(t *testing.T) {
 	f.expectUpdateFooStatusAction(foo)
 
 	f.run(getKey(foo, t))
+}
+
+func TestDoNothing(t *testing.T) {
+	f := newFixture(t)
+	foo := newFoo("test", int32Ptr(1))
+	d := newDeployment(foo)
+
+	f.fooLister = append(f.fooLister, foo)
+	f.objects = append(f.objects, foo)
+	f.deploymentLister = append(f.deploymentLister, d)
+	f.kubeobjects = append(f.kubeobjects, d)
+
+	f.expectUpdateFooStatusAction(foo)
+	f.run(getKey(foo, t))
+}
+
+func TestUpdateDeployment(t *testing.T) {
+	f := newFixture(t)
+	foo := newFoo("test", int32Ptr(1))
+	d := newDeployment(foo)
+
+	// Update replicas
+	foo.Spec.Replicas = int32Ptr(2)
+	expDeployment := newDeployment(foo)
+
+	f.fooLister = append(f.fooLister, foo)
+	f.objects = append(f.objects, foo)
+	f.deploymentLister = append(f.deploymentLister, d)
+	f.kubeobjects = append(f.kubeobjects, d)
+
+	f.expectUpdateFooStatusAction(foo)
+	f.expectUpdateDeploymentAction(expDeployment)
+	f.run(getKey(foo, t))
+}
+
+func TestNotControllByUs(t *testing.T) {
+	f := newFixture(t)
+	foo := newFoo("test", int32Ptr(1))
+	d := newDeployment(foo)
+
+	d.ObjectMeta.OwnerReferences = []metav1.OwnerReference{}
+
+	f.fooLister = append(f.fooLister, foo)
+	f.objects = append(f.objects, foo)
+	f.deploymentLister = append(f.deploymentLister, d)
+	f.kubeobjects = append(f.kubeobjects, d)
+
+	f.runExpectError(getKey(foo, t))
 }
 
 func int32Ptr(i int32) *int32 { return &i }
