@@ -32,3 +32,16 @@ $ ./hack/update-codegen.sh
 [controller.go](./controller.go) should be witten.
 
 ### Implement main
+[main.go](./main.go) (and [pkg/signals](./pkg/signals)) should be witten.
+
+## Run
+
+```bash
+$ go run . -kubeconfig ${HOME}/.kube/config
+```
+
+```bash
+$ kubectl create -f artifacts/examples/crd.yaml
+$ kubectl create -f artifacts/examples/example-foo.yaml
+$ kubectl get deployments
+```
