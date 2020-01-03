@@ -8,6 +8,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	appsinformers "k8s.io/client-go/informers/apps/v1"
@@ -98,7 +99,9 @@ func NewController(
 	klog.Info("Setting up event handlers")
 	// Set up an event handler for when Foo resources change
 	fooInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: controller.enqueueFoo,
+		AddFunc: func(new interface{}) {
+			controller.enqueueFoo(new)
+		},
 		UpdateFunc: func(old, new interface{}) {
 			controller.enqueueFoo(new)
 		},
@@ -119,6 +122,7 @@ func NewController(
 				// Two different versions of the same Deployment will always have different RVs.
 				return
 			}
+
 			controller.handleObject(new)
 		},
 		DeleteFunc: controller.handleObject,
@@ -277,6 +281,7 @@ func (c *Controller) processNextWorkItem() bool {
 // converge the two. It then updates the Status block of the Foo resource
 // with the current status of the resource.
 func (c *Controller) syncHandler(key string) error {
+	klog.Infof("Starting syncing")
 	// Convert the namespace/name string into a distinct namespace and name
 	namespace, name, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
@@ -326,6 +331,12 @@ func (c *Controller) syncHandler(key string) error {
 		msg := fmt.Sprintf(MessageResourceExists, deployment.Name)
 		c.recorder.Event(foo, corev1.EventTypeWarning, ErrResourceExists, msg)
 		return fmt.Errorf(msg)
+	}
+
+	klog.Infoln("Cleanup owned resources")
+	if err := c.cleanupDeployment(foo); err != nil {
+		klog.V(4).Infof("Failed to cleanup deployments: %v", err)
+		return err
 	}
 
 	// If this number of the replicas on the Foo resource is specified, and the
@@ -390,6 +401,29 @@ func newDeployment(foo *samplev1alpha1.Foo) *appsv1.Deployment {
 			},
 		},
 	}
+}
+
+func (c *Controller) cleanupDeployment(foo *samplev1alpha1.Foo) error {
+	selector := labels.NewSelector()
+	deployments, err := c.deploymentsLister.Deployments(foo.Namespace).List(selector)
+	if len(deployments) == 0 {
+		klog.Info("Skip cleanup, because there are not deployments")
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	for _, deployment := range deployments {
+		if !metav1.IsControlledBy(deployment, foo) {
+			continue
+		}
+		if deployment.Name != foo.Spec.DeploymentName {
+			klog.Infof("Deployment(%s) will been deleted", deployment.Name)
+			return c.kubeclientset.AppsV1().Deployments(foo.Namespace).Delete(deployment.Name, nil)
+		}
+	}
+	return nil
 }
 
 func (c *Controller) updateFooStatus(foo *samplev1alpha1.Foo, deployment *appsv1.Deployment) error {

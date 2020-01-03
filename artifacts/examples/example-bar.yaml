@@ -1,7 +1,7 @@
 apiVersion: samplecontroller.k8s.io/v1alpha1
 kind: Foo
 metadata:
-  name: example-foo
+  name: example-bar
 spec:
-  deploymentName: example-foo
-  replicas: 3
+  deploymentName: example-bar
+  replicas: 2
